@@ -9,7 +9,7 @@ GoogleIDToken currently provides a single useful class "Validator", which provid
 === Examples
 
   validator = GoogleIDToken::Validator.new
-  jwt = validator.validate(token, required_audience, required_client_id)
+  jwt = validator.check(token, required_audience, required_client_id)
   if jwt
     email = jwt['email']
   else
