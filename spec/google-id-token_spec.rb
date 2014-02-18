@@ -18,12 +18,21 @@
 $:.unshift("#{File.expand_path(File.dirname(__FILE__))}/../lib")
 require 'google-id-token'
 require 'fakeweb'
+require 'openssl'
 
 CERTS_URI = 'https://www.googleapis.com/oauth2/v1/certs'
 
 describe GoogleIDToken::Validator do
 
-  it 'should complain if unable to fetch Google tokens' do
+  it 'should successfully validate against a passed-in X509 cert' do
+    cert = OpenSSL::X509::Certificate.new(@literal_cert)
+    literal_validator = GoogleIDToken::Validator.new( :x509_cert => cert )
+    jwt = literal_validator.check(@token_for_literal, @aud_for_literal)
+    jwt.should_not == nil
+    jwt['aud'].should == @aud_for_literal
+  end
+
+  it 'should complain if unable to fetch old_skool Google tokens' do
     FakeWeb::register_uri(:get, CERTS_URI,
                           :status => ["404", "Not found"],
                           :body => 'Ouch!')
@@ -32,11 +41,11 @@ describe GoogleIDToken::Validator do
     t.problem.should =~ /Unable to retrieve.*keys/
   end
 
-  it 'should successfully validate a good token against good certs' do
+  it 'should successfully validate a good token against good old_skool certs' do
     FakeWeb::register_uri(:get, CERTS_URI,
                           :status => ["200", "Success"],
                           :body => @certs_body)
-    jwt = @validator.check(@good_token, @token_aud, @token_cid)
+    jwt = @old_skool_validator.check(@good_token, @token_aud, @token_cid)
     jwt.should_not == nil
     jwt['aud'].should == @token_aud
     jwt['cid'].should == @token_cid
@@ -48,34 +57,34 @@ describe GoogleIDToken::Validator do
                           :status => ["200", "Success"],
                           :body => @certs_body)
     bad_token = @good_token.gsub('x', 'y')
-    jwt = @validator.check(bad_token, @token_aud, @token_cid)
+    jwt = @old_skool_validator.check(bad_token, @token_aud, @token_cid)
     jwt.should == nil
-    @validator.problem.should =~ /not verified/
+    @old_skool_validator.problem.should =~ /not verified/
   end
   
   it 'should fail to validate a good token with wrong aud field' do
     FakeWeb::register_uri(:get, CERTS_URI,
                           :status => ["200", "Success"],
                           :body => @certs_body)
-    jwt = @validator.check(@good_token, @token_aud + 'x', @token_cid)
+    jwt = @old_skool_validator.check(@good_token, @token_aud + 'x', @token_cid)
     jwt.should == nil
-    @validator.problem.should =~ /audience mismatch/
+    @old_skool_validator.problem.should =~ /audience mismatch/
   end
 
   it 'should fail to validate a good token with wrong cid field' do
     FakeWeb::register_uri(:get, CERTS_URI,
                           :status => ["200", "Success"],
                           :body => @certs_body)
-    jwt = @validator.check(@good_token, @token_aud, @token_cid + 'x')
+    jwt = @old_skool_validator.check(@good_token, @token_aud, @token_cid + 'x')
     jwt.should == nil
-    @validator.problem.should =~ /client-id mismatch/
+    @old_skool_validator.problem.should =~ /client-id mismatch/
   end
 
   it 'should validate a good token with the new azp instead of cid field' do
     FakeWeb::register_uri(:get, CERTS_URI,
                           :status => ["200", "Success"],
                           :body => @nf_token_certs_body)
-    jwt = @validator.check(@new_fields_token, @nf_token_aud, @nf_token_azp)
+    jwt = @old_skool_validator.check(@new_fields_token, @nf_token_aud, @nf_token_azp)
     jwt.should_not == nil
     jwt['aud'].should == @nf_token_aud
     jwt['cid'].should == @nf_token_azp
@@ -103,6 +112,31 @@ describe GoogleIDToken::Validator do
  "55c15825ea28b9e5da15c7aa887e14eb355b28ad": "-----BEGIN CERTIFICATE-----\nMIICITCCAYqgAwIBAgIIJqqvU8CBfqIwDQYJKoZIhvcNAQEFBQAwNjE0MDIGA1UE\nAxMrZmVkZXJhdGVkLXNpZ25vbi5zeXN0ZW0uZ3NlcnZpY2VhY2NvdW50LmNvbTAe\nFw0xMzAyMjIwNjI4MzRaFw0xMzAyMjMxOTI4MzRaMDYxNDAyBgNVBAMTK2ZlZGVy\nYXRlZC1zaWdub24uc3lzdGVtLmdzZXJ2aWNlYWNjb3VudC5jb20wgZ8wDQYJKoZI\nhvcNAQEBBQADgY0AMIGJAoGBAK7o+lOca1/3R6YXX5FSVuZeWockCH450WmT7RKM\n8y1UM7zTxW5gbxDWA607UqRPQJF+JBHHqvNj3sjxloJmeEmAYhcNRqshr81Xi6fG\nVqqCq/MxBABOqLPwGjx3dNo9Q6DOsM2y1jvwjnHEs2cxoQ0VE9g1wEes7tgzzZI/\nlWcnAgMBAAGjODA2MAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMBYGA1Ud\nJQEB/wQMMAoGCCsGAQUFBwMCMA0GCSqGSIb3DQEBBQUAA4GBAB8bKSiG3Va27WLH\nvvFbiBaQMgCeNqpTOBCAZWMzrBKH4ixJnBFHKXHdJoVLCKqMp/chfEKxZ3fgZdkC\nFuFpYAnKxd7dPouLkd+7eyZDd/ORfmqVhfR7pvKC9FcwuNBvwj8iJzNHXxsrvZY+\nDuL8ZvGwdj7HTsIUASsb6/WIbh5m\n-----END CERTIFICATE-----\n"
 }'
 
-    @validator = GoogleIDToken::Validator.new
+    @literal_cert = '-----BEGIN CERTIFICATE-----
+MIIDDzCCAfegAwIBAgIJAMKLYPybcIAZMA0GCSqGSIb3DQEBBQUAMB4xHDAaBgNV
+BAMME0dvb2dsZSBBdXRoIFRvb2xraXQwHhcNMTMwNDI1MTUyMDExWhcNMTQwNDI1
+MTUyMDExWjAeMRwwGgYDVQQDDBNHb29nbGUgQXV0aCBUb29sa2l0MIIBIjANBgkq
+hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyVZ3j4Uovsspa6dCiTZAC/SndulGDKYf
+mVr95ea+u4k0XMvvd7w9k0wq4d1xagMIKHZhAnYLvYfW0O5D8+d58/+UJq4vrlY9
+zOcTOsOoZ5tX325TMIJmn7IzMMpds1tA2MfWNiMkf/+AFZfxg14jyBeRdk4LVZWa
+FxMz9Fs/23pTuNBYwGzM3xyZajgEhJ9gp3k95qlQPq00bIMa69YiAcmyr4RVYpgW
+qd+WPdROEZvRLsCaIGTeehLR6zceUPrTofbOo82JI3/PTfJ+bm+IzXRq5Ogynfw6
+f4z0pJ/YuUlmGD+rrm5Dfja/V3QTPyqzFpQSPXND7OdpT63MryKHtQIDAQABo1Aw
+TjAdBgNVHQ4EFgQUwGCN266hsEwDjx2aNQ4cdPSjmJMwHwYDVR0jBBgwFoAUwGCN
+266hsEwDjx2aNQ4cdPSjmJMwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQUFAAOC
+AQEABDl3G5Ao3ZTXdeNoeF8knWl//6pyxz/Jhv1/PApA9NQpyhqijmGyDMvCLt0F
+02HVTqg/MYG5zwUCroV9daraEdn5302sx8kh1Ei8SBCKzoDa7B8wSd2/KrEd6zsX
+/7ZVzSNx37xk5Jhzz6EmXfY7z22DmFWggxyeTYGgR5YgKkuslbIxxEKjVhK5YK60
+1pyRhl0tqe2xt+FMn0tvLdkCfVCvyDj2cD7g5XBVXZS4rqwfy1XpzQfSuU4sQcgn
+VpgjVOtnax48yJFXeNTrOoTPiQV2AZQSrGuKoJ8GojM6oZuEv5S2moB3IMKyU5F3
+RQ1NcLfJHhAz2ccdbaBXJaP4Hw==
+-----END CERTIFICATE-----'
+
+    @token_for_literal = 'eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2dpdGtpdC5nb29nbGUuY29tLyIsImF1ZCI6IjE4MzcyMDk1MTQ0NC5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImlhdCI6MTM5MjY3ODc2NiwiZXhwIjoxMzkzODg4MzY2LCJ1c2VyX2lkIjoiMTU5NDMzNTM0MjA3MTYzMjM1MjYiLCJlbWFpbCI6InRpbWJyYXlAZ21haWwuY29tIiwicHJvdmlkZXJfaWQiOiJnb29nbGUuY29tIiwidmVyaWZpZWQiOiJ0cnVlIn0.luCG168zwnQaVqzqCqGS1aazz9JEJcuPFwo_-1ZwWGa7VMl5sQEhQCpoWobO5KncXBt-kihaEka6VG4jAafJOc5vKS_89Lrtzb6yjTSpFQ8LDboNy9M1QxgOQVRILEHBn9dk6VijyfoQ0w9wKO-DSC_eDG0HHJ9bVSjbnO06yC-AvPTMLvp8aVNdYCeRxvV89dihNs90M09sfUHwOGAaExTeXZf7pA-t8zNOqo0-OEs2pdeoEYQfsnVjxeKIJedXobKfrEZVGp26vYfxVMGUB2KbZ_4H-IwnS2Uv5jZ9w9hY0sM5qo8OlwGpxKvH-l_h39ozoGS7Afqh7S89QovRUg'
+
+    @aud_for_literal = '183720951444.apps.googleusercontent.com'
+
+    @old_skool_validator = GoogleIDToken::Validator.new
+    
   end
 end

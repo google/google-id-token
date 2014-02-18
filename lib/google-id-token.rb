@@ -36,8 +36,18 @@ module GoogleIDToken
     #   Reason for failure, if #check returns nil
     attr_reader :problem
 
-    def initialize
-      @certs = {}
+    def initialize(keyopts = {})
+      if keyopts[:x509_cert]
+        @certs_mode = :literal
+        @certs = { :_ => keyopts[:x509_cert] }
+      # elsif keyopts[:jwk_uri]  # TODO
+      #   @certs_mode = :jwk
+      #   @certs = {}
+      else
+        @certs_mode = :old_skool
+        @certs = {}
+      end
+        
     end
 
     ##
@@ -121,11 +131,22 @@ module GoogleIDToken
 
     # returns true if there was a problem
     def refresh_certs
+      case @certs_mode
+      when :literal
+        return # no-op
+      when :old_skool
+        old_skool_refresh_certs
+      # when :jwk          # TODO
+      #  jwk_refresh_certs
+      end
+    end
+
+    def old_skool_refresh_certs
       uri = URI(GOOGLE_CERTS_URI)
       get = Net::HTTP::Get.new uri.request_uri
-      res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
-        http.request(get)
-      end
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      res = http.request(get)
 
       if res.kind_of?(Net::HTTPSuccess)
         new_certs = Hash[MultiJson.load(res.body).map do |key, cert|
