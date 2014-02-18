@@ -15,7 +15,7 @@
 
 Gem::Specification.new do |s|
   s.name = "google-id-token"
-  s.version = "1.1.0"
+  s.version = "1.2.0"
 
   s.homepage = "https://code.google.com/p/google-id-token/"
   s.summary = 'Google ID Token utilities'
@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "fakeweb"
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
+  s.add_development_dependency "openssl"
 
   s.authors = ["Tim Bray", "Bob Aman"]
   s.email = 'tbray@textuality.com'
