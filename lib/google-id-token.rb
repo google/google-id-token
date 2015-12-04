@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#  
+#
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -47,7 +47,7 @@ module GoogleIDToken
         @certs_mode = :old_skool
         @certs = {}
       end
-        
+
     end
 
     ##
@@ -89,34 +89,40 @@ module GoogleIDToken
         end
       end
     end
-    
+
     private
 
     # tries to validate the token against each cached cert.
     # Returns :valid (sets @token) or :problem (sets @problem) or
     #  nil, which means none of the certs validated.
     def check_cached_certs(token, aud, cid)
-      @problem = @token = nil
+      @problem = @token = @tokens = nil
 
       # find first public key that validates this token
       @certs.detect do |key, cert|
         begin
           public_key = cert.public_key
-          @token = JWT.decode(token, public_key, !!public_key)
-
-          # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
-          #  in the OIDC draft. At some future point we can go all-azp, but
-          #  this should keep everything running for a while
-          if @token['azp']
-            @token['cid'] = @token['azp']
-          elsif @token['cid']
-            @token['azp'] = @token['cid']
+          @tokens = JWT.decode(token, public_key, !!public_key)
+          @tokens.each do |currtoken|
+            # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
+            #  in the OIDC draft. At some future point we can go all-azp, but
+            #  this should keep everything running for a while
+            if currtoken['azp']
+              currtoken['cid'] = currtoken['azp']
+              if(currtoken.has_key?('aud') && (currtoken['aud'] == aud) &&
+                 currtoken.has_key?('cid') && (currtoken['cid'] == cid))
+                # If we find a valid token, save it for further verification.
+                @token = currtoken
+              end
+            elsif currtoken['cid']
+              currtoken['azp'] = currtoken['cid']
+            end
           end
         rescue JWT::DecodeError
           nil # go on, try the next cert
         end
       end
-      
+
       if @token
         if !(@token.has_key?('aud') && (@token['aud'] == aud))
           @problem = 'Token audience mismatch'
