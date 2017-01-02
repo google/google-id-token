@@ -103,6 +103,12 @@ module GoogleIDToken
         begin
           public_key = cert.public_key
           @tokens = JWT.decode(token, public_key, !!public_key)
+
+          # Support for JWT 0.x version
+          if !@tokens.is_a?(Array)
+            @tokens = [@tokens]
+          end
+
           @tokens.each do |currtoken|
             # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
             #  in the OIDC draft. At some future point we can go all-azp, but
