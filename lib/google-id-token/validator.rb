@@ -78,27 +78,20 @@ module GoogleIDToken
       @certs.detect do |key, cert|
         begin
           public_key = cert.public_key
-          @tokens = JWT.decode(token, public_key, !!public_key)
+          @token = JWT.decode(token, public_key, !!public_key)
 
-          # Support for JWT 0.x version
-          if !@tokens.is_a?(Array)
-            @tokens = [@tokens]
+          # Support for JWT 1.x version
+          if @token.is_a?(Array)
+            @token = @token[0]
           end
 
-          @tokens.each do |currtoken|
-            # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
-            #  in the OIDC draft. At some future point we can go all-azp, but
-            #  this should keep everything running for a while
-            if currtoken['azp']
-              currtoken['cid'] = currtoken['azp']
-              if(currtoken.has_key?('aud') && (currtoken['aud'] == aud) &&
-                 currtoken.has_key?('cid') && (currtoken['cid'] == cid))
-                # If we find a valid token, save it for further verification.
-                @token = currtoken
-              end
-            elsif currtoken['cid']
-              currtoken['azp'] = currtoken['cid']
-            end
+          # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
+          #  in the OIDC draft. At some future point we can go all-azp, but
+          #  this should keep everything running for a while
+          if @token['azp']
+            @token['cid'] = @token['azp']
+          elsif @token['cid']
+            @token['azp'] = @token['cid']
           end
         rescue JWT::DecodeError
           nil # go on, try the next cert
