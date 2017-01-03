@@ -94,4 +94,15 @@ describe GoogleIDToken::Validator do
     it_behaves_like "validates aud"
     it_behaves_like "validates cid"
   end
+
+  it "rejects corrupted token" do
+    validator = GoogleIDToken::Validator.new(x509_cert: @certificate)
+
+    token = JWT.encode({ aud: "audience", azp: "different_client_id" }, @private_key, "RS256")
+
+    decoded_token = validator.check("corrupted#{token}", "audience", "client_id")
+
+    expect(decoded_token).to be_nil
+    expect(validator.problem).to eq("Token not verified as issued by Google")
+  end
 end
