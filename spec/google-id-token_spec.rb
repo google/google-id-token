@@ -137,6 +137,27 @@ describe GoogleIDToken::Validator do
           end
         end
 
+        context 'when certificates are not expired' do
+          before { validator.instance_variable_set(:@certs_last_refresh, Time.now) }
+
+          it 'fails to validate a good token' do
+            expect {
+              validator.check(token, aud, cid)
+            }.to raise_error(GoogleIDToken::SignatureError)
+          end
+        end
+
+        context 'when certificates are expired' do
+          let(:validator) { GoogleIDToken::Validator.new(expiry: 60) }
+          before { validator.instance_variable_set(:@certs_last_refresh, Time.now - 120) }
+
+          it 'fails to validate a good token' do
+            result = validator.check(token, aud, cid)
+            expect(result).to_not be_nil
+            expect(result['aud']).to eq aud
+          end
+        end
+
         it 'validates a good token with the new azp instead of cid field' do
           payload[:azp] = payload[:cid]
           payload[:cid] = nil

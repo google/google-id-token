@@ -18,7 +18,7 @@
 #  succeeds, returns the decoded ID Token as a hash.
 # It's a good idea to keep an instance of this class around for a long time,
 #  because it caches the keys, performs validation statically, and only
-#  refreshes from Google when required (typically once per day)
+#  refreshes from Google when required (once per day by default)
 #
 # @author Tim Bray, adapted from code by Bob Aman
 
@@ -39,7 +39,10 @@ module GoogleIDToken
   class Validator
 
     GOOGLE_CERTS_URI = 'https://www.googleapis.com/oauth2/v1/certs'
-    GOOGLE_ISSUERS   = ['accounts.google.com', 'https://accounts.google.com']
+    GOOGLE_CERTS_EXPIRY = 86400 # 1 day
+
+    # https://developers.google.com/identity/sign-in/web/backend-auth
+    GOOGLE_ISSUERS = ['accounts.google.com', 'https://accounts.google.com']
 
     def initialize(keyopts = {})
       if keyopts[:x509_cert]
@@ -52,6 +55,8 @@ module GoogleIDToken
         @certs_mode = :old_skool
         @certs = {}
       end
+
+      @certs_expiry = keyopts.fetch(:expiry, GOOGLE_CERTS_EXPIRY)
     end
 
     ##
@@ -148,6 +153,8 @@ module GoogleIDToken
     end
 
     def old_skool_refresh_certs
+      return true unless certs_cache_expired?
+
       uri = URI(GOOGLE_CERTS_URI)
       get = Net::HTTP::Get.new uri.request_uri
       http = Net::HTTP.new(uri.host, uri.port)
@@ -159,9 +166,18 @@ module GoogleIDToken
                            [key, OpenSSL::X509::Certificate.new(cert)]
                          end]
         @certs.merge! new_certs
+        @certs_last_refresh = Time.now
         true
       else
         false
+      end
+    end
+
+    def certs_cache_expired?
+      if defined? @certs_last_refresh
+        Time.now > @certs_last_refresh + @certs_expiry
+      else
+        true
       end
     end
   end
