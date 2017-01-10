@@ -11,19 +11,19 @@ Creating a new validator takes a single optional hash argument. If the hash has 
 === Examples
 
   validator = GoogleIDToken::Validator.new
-  jwt = validator.check(token, required_audience, required_client_id)
-  if jwt
+  begin
+    jwt = validator.check(token, required_audience, required_client_id)
     email = jwt['email']
-  else
-    report "Cannot validate: #{validator.problem}"
+  rescue GoogleIDToken::ValidationError => e
+    report "Cannot validate: #{e}"
   end
 
 
   cert = OpenSSL::X509::Certificate.new(File.read('my-cert.pem'))
   validator = GoogleIDToken::Validator.new(:x509_cert => cert)
-  jwt = validator.check(token, required_audience, required_client_id)
-  if jwt
+  begin
+    jwt = validator.check(token, required_audience, required_client_id)
     email = jwt['email']
-  else
-    report "Cannot validate: #{validator.problem}"
+  rescue GoogleIDToken::ValidationError => e
+    report "Cannot validate: #{e}"
   end
