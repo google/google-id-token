@@ -18,7 +18,7 @@
 #  succeeds, returns the decoded ID Token as a hash.
 # It's a good idea to keep an instance of this class around for a long time,
 #  because it caches the keys, performs validation statically, and only
-#  refreshes from Google when required (typically once per day)
+#  refreshes from Google when required (once per day by default)
 #
 # @author Tim Bray, adapted from code by Bob Aman
 
@@ -28,13 +28,21 @@ require 'openssl'
 require 'net/http'
 
 module GoogleIDToken
+  class CertificateError < StandardError; end
+  class ValidationError < StandardError; end
+  class ExpiredTokenError < ValidationError; end
+  class SignatureError < ValidationError; end
+  class InvalidIssuerError < ValidationError; end
+  class AudienceMismatchError < ValidationError; end
+  class ClientIDMismatchError < ValidationError; end
+
   class Validator
 
     GOOGLE_CERTS_URI = 'https://www.googleapis.com/oauth2/v1/certs'
+    GOOGLE_CERTS_EXPIRY = 86400 # 1 day
 
-    # @!attribute [r] problem
-    #   Reason for failure, if #check returns nil
-    attr_reader :problem
+    # https://developers.google.com/identity/sign-in/web/backend-auth
+    GOOGLE_ISSUERS = ['accounts.google.com', 'https://accounts.google.com']
 
     def initialize(keyopts = {})
       if keyopts[:x509_cert]
@@ -48,14 +56,15 @@ module GoogleIDToken
         @certs = {}
       end
 
+      @certs_expiry = keyopts.fetch(:expiry, GOOGLE_CERTS_EXPIRY)
     end
 
     ##
-    # If it validates, returns a hash with the JWT fields from the ID Token.
+    # If it validates, returns a hash with the JWT payload from the ID Token.
     #  You have to provide an "aud" value, which must match the
     #  token's field with that name, and will similarly check cid if provided.
     #
-    # If something fails, returns nil; #problem returns error text
+    # If something fails, raises an error
     #
     # @param [String] token
     #   The string form of the token
@@ -64,82 +73,78 @@ module GoogleIDToken
     # @param [String] cid
     #   The optional client-id ("azp" field) value
     #
-    # @return [Hash] The decoded ID token, or null
+    # @return [Hash] The decoded ID token
     def check(token, aud, cid = nil)
-      case check_cached_certs(token, aud, cid)
-      when :valid
-        @token
-      when :problem
-        nil
-      else
+      payload = check_cached_certs(token, aud, cid)
+
+      unless payload
         # no certs worked, might've expired, refresh
         if refresh_certs
-          @problem = 'Unable to retrieve Google public keys'
-          nil
-        else
-          case check_cached_certs(token, aud, cid)
-          when :valid
-            @token
-          when :problem
-            nil
-          else
-            @problem = 'Token not verified as issued by Google'
-            nil
+          payload = check_cached_certs(token, aud, cid)
+
+          unless payload
+            raise SignatureError, 'Token not verified as issued by Google'
           end
+        else
+          raise CertificateError, 'Unable to retrieve Google public keys'
         end
       end
+
+      payload
     end
 
     private
 
     # tries to validate the token against each cached cert.
-    # Returns :valid (sets @token) or :problem (sets @problem) or
+    # Returns the token payload or raises a ValidationError or
     #  nil, which means none of the certs validated.
     def check_cached_certs(token, aud, cid)
-      @problem = @token = @tokens = nil
+      payload = nil
 
       # find first public key that validates this token
       @certs.detect do |key, cert|
         begin
           public_key = cert.public_key
-          @tokens = JWT.decode(token, public_key, !!public_key)
-          @tokens.each do |currtoken|
-            # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
-            #  in the OIDC draft. At some future point we can go all-azp, but
-            #  this should keep everything running for a while
-            if currtoken['azp']
-              currtoken['cid'] = currtoken['azp']
-              if(currtoken.has_key?('aud') && (currtoken['aud'] == aud) &&
-                 currtoken.has_key?('cid') && (currtoken['cid'] == cid))
-                # If we find a valid token, save it for further verification.
-                @token = currtoken
-              end
-            elsif currtoken['cid']
-              currtoken['azp'] = currtoken['cid']
-            end
+          decoded_token = JWT.decode(token, public_key, !!public_key)
+          payload = decoded_token.first
+
+          # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
+          #  in the OIDC draft. At some future point we can go all-azp, but
+          #  this should keep everything running for a while
+          if payload['azp']
+            payload['cid'] = payload['azp']
+          elsif payload['cid']
+            payload['azp'] = payload['cid']
           end
-        rescue JWT::DecodeError
+          payload
+        rescue JWT::ExpiredSignature
+          raise ExpiredTokenError, 'Token signature is expired'
+        rescue JWT::DecodeError => e
           nil # go on, try the next cert
         end
       end
 
-      if @token
-        if !(@token.has_key?('aud') && (@token['aud'] == aud))
-          @problem = 'Token audience mismatch'
-        elsif cid && !(@token.has_key?('cid') && (@token['cid'] == cid))
-          @problem = 'Token client-id mismatch'
+      if payload
+        if !(payload.has_key?('aud') && payload['aud'] == aud)
+          raise AudienceMismatchError, 'Token audience mismatch'
         end
-        @problem ? :problem : :valid
+        if cid && payload['cid'] != cid
+          raise ClientIDMismatchError, 'Token client-id mismatch'
+        end
+        if !GOOGLE_ISSUERS.include?(payload['iss'])
+          raise InvalidIssuerError, 'Token issuer mismatch'
+        end
+        payload
       else
         nil
       end
     end
 
-    # returns true if there was a problem
+    # returns false if there was a problem
     def refresh_certs
       case @certs_mode
       when :literal
-        return # no-op
+        true # no-op
       when :old_skool
         old_skool_refresh_certs
       # when :jwk          # TODO
@@ -148,18 +153,29 @@ module GoogleIDToken
     end
 
     def old_skool_refresh_certs
+      return true unless certs_cache_expired?
+
       uri = URI(GOOGLE_CERTS_URI)
       get = Net::HTTP::Get.new uri.request_uri
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
       res = http.request(get)
 
-      if res.kind_of?(Net::HTTPSuccess)
+      if res.is_a?(Net::HTTPSuccess)
         new_certs = Hash[MultiJson.load(res.body).map do |key, cert|
                            [key, OpenSSL::X509::Certificate.new(cert)]
                          end]
         @certs.merge! new_certs
+        @certs_last_refresh = Time.now
+        true
+      else
         false
+      end
+    end
+
+    def certs_cache_expired?
+      if defined? @certs_last_refresh
+        Time.now > @certs_last_refresh + @certs_expiry
       else
         true
       end
