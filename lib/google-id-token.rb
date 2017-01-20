@@ -110,7 +110,7 @@ module GoogleIDToken
             if currtoken['azp']
               currtoken['cid'] = currtoken['azp']
               if(currtoken.has_key?('aud') && (currtoken['aud'] == aud) &&
-                 currtoken.has_key?('cid') && (currtoken['cid'] == cid))
+                 (!cid || (currtoken.has_key?('cid') && (currtoken['cid'] == cid))))
                 # If we find a valid token, save it for further verification.
                 @token = currtoken
               end
