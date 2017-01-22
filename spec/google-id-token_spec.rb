@@ -33,14 +33,12 @@ describe GoogleIDToken::Validator do
 
     let(:iss) { 'https://accounts.google.com' }
     let(:aud) { '123456789.apps.googleusercontent.com' }
-    let(:cid) { '123456789.apps.googleusercontent.com' }
     let(:exp) { Time.now + 10 }
 
     let(:payload) {{
       exp: exp.to_i,
       iss: iss,
       aud: aud,
-      cid: cid,
       user_id: '12345',
       email: 'test@gmail.com',
       provider_id: 'google.com',
@@ -91,30 +89,22 @@ describe GoogleIDToken::Validator do
         end
 
         it 'successfully validates a good token' do
-          result = validator.check(token, aud, cid)
+          result = validator.check(token, aud)
           expect(result).to_not be_nil
           expect(result['aud']).to eq aud
-          expect(result['cid']).to eq cid
-          expect(result['azp']).to eq cid
         end
 
         it 'fails to validate a mangled token' do
           bad_token = token.gsub('x', 'y')
           expect {
-            validator.check(bad_token, aud, cid)
+            validator.check(bad_token, aud)
           }.to raise_error(GoogleIDToken::SignatureError)
         end
 
         it 'fails to validate a good token with wrong aud field' do
           expect {
-            validator.check(token, aud + 'x', cid)
+            validator.check(token, aud + 'x')
           }.to raise_error(GoogleIDToken::AudienceMismatchError)
-        end
-
-        it 'fails to validate a good token with wrong cid field' do
-          expect {
-            validator.check(token, aud, cid + 'x')
-          }.to raise_error(GoogleIDToken::ClientIDMismatchError)
         end
 
         context 'when token is expired' do
@@ -122,7 +112,7 @@ describe GoogleIDToken::Validator do
 
           it 'fails to validate a good token' do
             expect {
-              validator.check(token, aud, cid)
+              validator.check(token, aud)
             }.to raise_error(GoogleIDToken::ExpiredTokenError)
           end
         end
@@ -132,7 +122,7 @@ describe GoogleIDToken::Validator do
 
           it 'fails to validate a good token' do
             expect {
-              validator.check(token, aud, cid)
+              validator.check(token, aud)
             }.to raise_error(GoogleIDToken::InvalidIssuerError)
           end
         end
@@ -142,7 +132,7 @@ describe GoogleIDToken::Validator do
 
           it 'fails to validate a good token' do
             expect {
-              validator.check(token, aud, cid)
+              validator.check(token, aud)
             }.to raise_error(GoogleIDToken::SignatureError)
           end
         end
@@ -152,20 +142,10 @@ describe GoogleIDToken::Validator do
           before { validator.instance_variable_set(:@certs_last_refresh, Time.now - 120) }
 
           it 'fails to validate a good token' do
-            result = validator.check(token, aud, cid)
+            result = validator.check(token, aud)
             expect(result).to_not be_nil
             expect(result['aud']).to eq aud
           end
-        end
-
-        it 'validates a good token with the new azp instead of cid field' do
-          payload[:azp] = payload[:cid]
-          payload[:cid] = nil
-          result = validator.check(token, aud, cid)
-          expect(result).to_not be_nil
-          expect(result['aud']).to eq aud
-          expect(result['cid']).to eq cid
-          expect(result['azp']).to eq cid
         end
       end
     end

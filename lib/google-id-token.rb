@@ -34,7 +34,6 @@ module GoogleIDToken
   class SignatureError < ValidationError; end
   class InvalidIssuerError < ValidationError; end
   class AudienceMismatchError < ValidationError; end
-  class ClientIDMismatchError < ValidationError; end
 
   class Validator
 
@@ -62,7 +61,7 @@ module GoogleIDToken
     ##
     # If it validates, returns a hash with the JWT payload from the ID Token.
     #  You have to provide an "aud" value, which must match the
-    #  token's field with that name, and will similarly check cid if provided.
+    #  token's field with that name.
     #
     # If something fails, raises an error
     #
@@ -71,16 +70,16 @@ module GoogleIDToken
     # @param [String] aud
     #   The required audience value
     # @param [String] cid
-    #   The optional client-id ("azp" field) value
+    #   Deprecated client-id ("azp" field) value (not verified)
     #
     # @return [Hash] The decoded ID token
     def check(token, aud, cid = nil)
-      payload = check_cached_certs(token, aud, cid)
+      payload = check_cached_certs(token, aud)
 
       unless payload
         # no certs worked, might've expired, refresh
         if refresh_certs
-          payload = check_cached_certs(token, aud, cid)
+          payload = check_cached_certs(token, aud)
 
           unless payload
             raise SignatureError, 'Token not verified as issued by Google'
@@ -98,7 +97,7 @@ module GoogleIDToken
     # tries to validate the token against each cached cert.
     # Returns the token payload or raises a ValidationError or
     #  nil, which means none of the certs validated.
-    def check_cached_certs(token, aud, cid)
+    def check_cached_certs(token, aud)
       payload = nil
 
       # find first public key that validates this token
@@ -107,16 +106,6 @@ module GoogleIDToken
           public_key = cert.public_key
           decoded_token = JWT.decode(token, public_key, !!public_key)
           payload = decoded_token.first
-
-          # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
-          #  in the OIDC draft. At some future point we can go all-azp, but
-          #  this should keep everything running for a while
-          if payload['azp']
-            payload['cid'] = payload['azp']
-          elsif payload['cid']
-            payload['azp'] = payload['cid']
-          end
-          payload
         rescue JWT::ExpiredSignature
           raise ExpiredTokenError, 'Token signature is expired'
         rescue JWT::DecodeError => e
@@ -127,9 +116,6 @@ module GoogleIDToken
       if payload
         if !(payload.has_key?('aud') && payload['aud'] == aud)
           raise AudienceMismatchError, 'Token audience mismatch'
-        end
-        if cid && payload['cid'] != cid
-          raise ClientIDMismatchError, 'Token client-id mismatch'
         end
         if !GOOGLE_ISSUERS.include?(payload['iss'])
           raise InvalidIssuerError, 'Token issuer mismatch'
