@@ -22,6 +22,7 @@
 #
 # @author Tim Bray, adapted from code by Bob Aman
 
+require 'google-id-token/version'
 require 'multi_json'
 require 'jwt'
 require 'openssl'
