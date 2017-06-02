@@ -24,7 +24,6 @@ Gem::Specification.new do |s|
 
   s.files = ['lib/google-id-token.rb', 'README.rdoc' ]
 
-  s.add_runtime_dependency 'multi_json'
   s.add_runtime_dependency 'jwt', '>= 1'
 
   s.add_development_dependency 'fakeweb'
