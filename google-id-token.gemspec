@@ -15,7 +15,7 @@
 
 Gem::Specification.new do |s|
   s.name = 'google-id-token'
-  s.version = '1.3.2'
+  s.version = '1.3.1'
 
   s.homepage = 'https://github.com/google/google-id-token/'
   s.license = 'APACHE-2.0'
