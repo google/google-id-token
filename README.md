@@ -13,7 +13,7 @@ Creating a new validator takes a single optional hash argument. If the hash has 
 ``` ruby
 validator = GoogleIDToken::Validator.new(expiry: 1800)
 begin
-  payload = validator.check(token, required_audience, required_client_id)
+  payload = validator.check(token, required_audience, optional_client_id)
   email = payload['email']
 rescue GoogleIDToken::ValidationError => e
   report "Cannot validate: #{e}"
@@ -23,7 +23,7 @@ end
 cert = OpenSSL::X509::Certificate.new(File.read('my-cert.pem'))
 validator = GoogleIDToken::Validator.new(x509_cert: cert)
 begin
-  payload = validator.check(token, required_audience, required_client_id)
+  payload = validator.check(token, required_audience, optional_client_id)
   email = payload['email']
 rescue GoogleIDToken::ValidationError => e
   report "Cannot validate: #{e}"
