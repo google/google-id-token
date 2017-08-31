@@ -25,6 +25,7 @@
 require 'google-id-token/version'
 require 'json'
 require 'jwt'
+require 'monitor'
 require 'net/http'
 require 'openssl'
 
@@ -38,6 +39,7 @@ module GoogleIDToken
   class ClientIDMismatchError < ValidationError; end
 
   class Validator
+    include MonitorMixin
 
     GOOGLE_CERTS_URI = 'https://www.googleapis.com/oauth2/v1/certs'
     GOOGLE_CERTS_EXPIRY = 3600 # 1 hour
@@ -46,6 +48,8 @@ module GoogleIDToken
     GOOGLE_ISSUERS = ['accounts.google.com', 'https://accounts.google.com']
 
     def initialize(options = {})
+      super()
+
       if options[:x509_cert]
         @certs_mode = :literal
         @certs = { :_ => options[:x509_cert] }
@@ -76,22 +80,24 @@ module GoogleIDToken
     #
     # @return [Hash] The decoded ID token
     def check(token, aud, cid = nil)
-      payload = check_cached_certs(token, aud, cid)
+      synchronize do
+        payload = check_cached_certs(token, aud, cid)
 
-      unless payload
-        # no certs worked, might've expired, refresh
-        if refresh_certs
-          payload = check_cached_certs(token, aud, cid)
+        unless payload
+          # no certs worked, might've expired, refresh
+          if refresh_certs
+            payload = check_cached_certs(token, aud, cid)
 
-          unless payload
-            raise SignatureError, 'Token not verified as issued by Google'
+            unless payload
+              raise SignatureError, 'Token not verified as issued by Google'
+            end
+          else
+            raise CertificateError, 'Unable to retrieve Google public keys'
           end
-        else
-          raise CertificateError, 'Unable to retrieve Google public keys'
         end
-      end
 
-      payload
+        payload
+      end
     end
 
     private
@@ -164,8 +170,8 @@ module GoogleIDToken
 
       if res.is_a?(Net::HTTPSuccess)
         new_certs = Hash[JSON.load(res.body).map do |key, cert|
-                           [key, OpenSSL::X509::Certificate.new(cert)]
-                         end]
+          [key, OpenSSL::X509::Certificate.new(cert)]
+        end]
         @certs.merge! new_certs
         @certs_last_refresh = Time.now
         true
