@@ -15,8 +15,7 @@
 
 # @author Tim Bray, adapted from code by Bob Aman
 
-$:.unshift("#{File.expand_path(File.dirname(__FILE__))}/../lib")
-require 'google-id-token'
+require 'spec_helper'
 require 'fakeweb'
 require 'openssl'
 

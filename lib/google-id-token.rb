@@ -22,10 +22,11 @@
 #
 # @author Tim Bray, adapted from code by Bob Aman
 
+require 'google-id-token/version'
 require 'json'
 require 'jwt'
-require 'openssl'
 require 'net/http'
+require 'openssl'
 
 module GoogleIDToken
   class CertificateError < StandardError; end
@@ -39,16 +40,16 @@ module GoogleIDToken
   class Validator
 
     GOOGLE_CERTS_URI = 'https://www.googleapis.com/oauth2/v1/certs'
-    GOOGLE_CERTS_EXPIRY = 86400 # 1 day
+    GOOGLE_CERTS_EXPIRY = 3600 # 1 hour
 
     # https://developers.google.com/identity/sign-in/web/backend-auth
     GOOGLE_ISSUERS = ['accounts.google.com', 'https://accounts.google.com']
 
-    def initialize(keyopts = {})
-      if keyopts[:x509_cert]
+    def initialize(options = {})
+      if options[:x509_cert]
         @certs_mode = :literal
-        @certs = { :_ => keyopts[:x509_cert] }
-      # elsif keyopts[:jwk_uri]  # TODO
+        @certs = { :_ => options[:x509_cert] }
+      # elsif options[:jwk_uri]  # TODO
       #   @certs_mode = :jwk
       #   @certs = {}
       else
@@ -56,7 +57,7 @@ module GoogleIDToken
         @certs = {}
       end
 
-      @certs_expiry = keyopts.fetch(:expiry, GOOGLE_CERTS_EXPIRY)
+      @certs_expiry = options.fetch(:expiry, GOOGLE_CERTS_EXPIRY)
     end
 
     ##
