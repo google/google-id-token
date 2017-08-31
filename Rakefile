@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#  
+#
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -13,14 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-lib_dir = File.expand_path(File.join(File.dirname(__FILE__), "lib"))
-$:.unshift(lib_dir)
-$:.uniq!
-
 require 'rspec/core/rake_task'
 
 task :default => :spec
 
-RSpec::Core::RakeTask.new 
-
-
+RSpec::Core::RakeTask.new
