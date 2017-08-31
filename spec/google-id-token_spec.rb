@@ -77,7 +77,7 @@ describe GoogleIDToken::Validator do
           crypto = generate_certificate
           @key2 = crypto[:key]
           @cert2 = crypto[:cert]
-          @certs_body = MultiJson.dump({
+          @certs_body = JSON.dump({
            "123" => @cert.to_pem,
            "321" => @cert2.to_pem
           })

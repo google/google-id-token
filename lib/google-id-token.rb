@@ -23,10 +23,10 @@
 # @author Tim Bray, adapted from code by Bob Aman
 
 require 'google-id-token/version'
-require 'multi_json'
+require 'json'
 require 'jwt'
-require 'openssl'
 require 'net/http'
+require 'openssl'
 
 module GoogleIDToken
   class CertificateError < StandardError; end
@@ -163,7 +163,7 @@ module GoogleIDToken
       res = http.request(get)
 
       if res.is_a?(Net::HTTPSuccess)
-        new_certs = Hash[MultiJson.load(res.body).map do |key, cert|
+        new_certs = Hash[JSON.load(res.body).map do |key, cert|
                            [key, OpenSSL::X509::Certificate.new(cert)]
                          end]
         @certs.merge! new_certs
