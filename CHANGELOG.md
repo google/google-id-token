@@ -1,4 +1,11 @@
-## [1.4.0] - 2017-01-20
+# Change Log
+
+## [1.4.1] - 2017-09-06
+### Added
+- Add compatibility with `jwt` gem `v2.0`.
+
+
+## [1.4.0] - 2017-09-01
 ### Added
 - Add `expiry` option to the `Validator` which defines the time after which the certificates cache should be renewed. This prevents continuously fetching them in case of constant decoding errors.
 
