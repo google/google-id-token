@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.4.2] - 2017-09-11
+### Fxied
+- Updated `*.rb` files' file permissions.
+
 ## [1.4.1] - 2017-09-06
 ### Added
 - Add compatibility with `jwt` gem `v2.0`.
