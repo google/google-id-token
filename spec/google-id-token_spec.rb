@@ -116,6 +116,16 @@ describe GoogleIDToken::Validator do
           }.to raise_error(GoogleIDToken::ClientIDMismatchError)
         end
 
+        context 'when aud is an array' do
+          let(:aud_array) { ['123456789.apps.googleusercontent.com', '987654321.apps.googleusercontent.com'] }
+
+          it 'it checks aud against an array' do
+            expect {
+              validator.check(token, aud_array, cid)
+            }.not_to raise_error(GoogleIDToken::AudienceMismatchError)
+          end
+        end
+
         context 'when token is expired' do
           let(:exp) { Time.now - 10 }
 
