@@ -62,6 +62,7 @@ module GoogleIDToken
       end
 
       @certs_expiry = options.fetch(:expiry, GOOGLE_CERTS_EXPIRY)
+      @timeout = options.fetch(:timeout, nil)
     end
 
     ##
@@ -166,6 +167,11 @@ module GoogleIDToken
       get = Net::HTTP::Get.new uri.request_uri
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
+
+      if @timeout
+        http.read_timeout = http.open_timeout = @timeout
+      end
+
       res = http.request(get)
 
       if res.is_a?(Net::HTTPSuccess)
