@@ -178,6 +178,8 @@ module GoogleIDToken
       else
         false
       end
+    rescue Net::OpenTimeout, Net::ReadTimeout
+      false
     end
 
     def certs_cache_expired?
