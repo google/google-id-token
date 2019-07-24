@@ -126,7 +126,7 @@ module GoogleIDToken
           payload
         rescue JWT::ExpiredSignature
           raise ExpiredTokenError, 'Token signature is expired'
-        rescue JWT::DecodeError => e
+        rescue JWT::DecodeError
           nil # go on, try the next cert
         end
       end
