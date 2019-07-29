@@ -132,7 +132,7 @@ module GoogleIDToken
       end
 
       if payload
-        unless payload.has_key?('aud') &&
+        if !(payload.has_key?('aud') && Array(payload['aud']).include?(aud))
                (payload['aud'] == aud ||
                (aud.is_a?(Array) && aud.include?(payload['aud'])))
           raise AudienceMismatchError, 'Token audience mismatch'
