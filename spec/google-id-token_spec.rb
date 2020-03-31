@@ -70,6 +70,63 @@ describe GoogleIDToken::Validator do
             validator.check('whatever', 'whatever')
           }.to raise_error(GoogleIDToken::CertificateError)
         end
+
+        context 'when encountering network issues' do
+          let(:uri) { URI(CERTS_URI) }
+          let(:net_http_double) { object_double(Net::HTTP.new(uri.host, uri.port), :use_ssl= => true) }
+
+          context 'when network open request times out' do
+            before do
+              allow(net_http_double).to receive(:request).and_raise(Net::OpenTimeout)
+              allow(Net::HTTP).to receive(:new).and_return(net_http_double)
+            end
+
+            it 'raises an error' do
+              expect {
+                validator.check('whatever', 'whatever')
+              }.to raise_error(GoogleIDToken::CertificateError)
+            end
+          end
+
+          context 'when network read request times out' do
+            before do
+              allow(net_http_double).to receive(:request).and_raise(Net::ReadTimeout)
+              allow(Net::HTTP).to receive(:new).and_return(net_http_double)
+            end
+
+            it 'raises an error' do
+              expect {
+                validator.check('whatever', 'whatever')
+              }.to raise_error(GoogleIDToken::CertificateError)
+            end
+
+            context 'providing timeout value' do
+              context 'when no timeout is provided' do
+                it 'does not set a timeout on the http instance' do
+                  expect(net_http_double).not_to receive(:read_timeout)
+                  expect(net_http_double).not_to receive(:open_timeout)
+
+                  expect {
+                    validator.check('whatever', 'whatever')
+                  }.to raise_error(GoogleIDToken::CertificateError)
+                end
+              end
+
+              context 'when providing a timeout' do
+                let(:validator) { GoogleIDToken::Validator.new(timeout: 5) }
+
+                it 'sets the timeout on the http instance' do
+                  expect(net_http_double).to receive(:read_timeout=).with(5)
+                  expect(net_http_double).to receive(:open_timeout=).with(5)
+
+                  expect {
+                    validator.check('whatever', 'whatever')
+                  }.to raise_error(GoogleIDToken::CertificateError)
+                end
+              end
+            end
+          end
+        end
       end
 
       context 'when able to fetch old_skool certs' do
