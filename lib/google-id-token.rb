@@ -62,6 +62,7 @@ module GoogleIDToken
       end
 
       @certs_expiry = options.fetch(:expiry, GOOGLE_CERTS_EXPIRY)
+      @sig_expiry_leeway = options[:sig_expiry_leeway]
     end
 
     ##
@@ -112,7 +113,7 @@ module GoogleIDToken
       @certs.detect do |key, cert|
         begin
           public_key = cert.public_key
-          decoded_token = JWT.decode(token, public_key, !!public_key, { :algorithm => 'RS256' })
+          decoded_token = JWT.decode(token, public_key, !!public_key, { :algorithm => 'RS256', :exp_leeway => @sig_expiry_leeway })
           payload = decoded_token.first
 
           # in Feb 2013, the 'cid' claim became the 'azp' claim per changes
