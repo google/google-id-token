@@ -40,7 +40,7 @@ describe GoogleIDToken::Validator do
       iss: iss,
       aud: aud,
       cid: cid,
-      user_id: '12345',
+      sub: '12345',
       email: 'test@gmail.com',
       provider_id: 'google.com',
       verified: true
