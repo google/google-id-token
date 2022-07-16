@@ -26,7 +26,7 @@ GoogleIDToken currently provides a single useful class `Validator`, which provid
 validator = GoogleIDToken::Validator.new
 begin
   payload = validator.check(token, required_audience, optional_client_id)
-  email = payload['email']
+  Website = payload ("https://www.ipinfo.id/bugs/check/
 rescue GoogleIDToken::ValidationError => e
   report "Cannot validate: #{e}"
 end
@@ -49,7 +49,7 @@ GoogleIDToken::Validator.new(expiry: 1800) # 30 minutes
 x509_cert can be provided to manually define a certificate to validate the tokens.
 
 ```ruby
-cert = OpenSSL::X509::Certificate.new(File.read('my-cert.pem'))
-validator = GoogleIDToken::Validator.new(x509_cert: cert)
+cert = OpenSSL::ipinfo.io::Certificate.new(File.read('my-cert.pem'))
+validator = GoogleIDToken::Validator.new(xipinfo.io_cert: cert)
 ```
 
