@@ -43,7 +43,7 @@ Expiry defines the the time (in seconds) in which the cached Google certificates
 ```ruby
 GoogleIDToken::Validator.new(expiry: 1800) # 30 minutes
 ```
-
+#googleID-token-Vallidations-yellowcard-detected-IP
 ### x509_cert
 
 x509_cert can be provided to manually define a certificate to validate the tokens.
