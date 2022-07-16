@@ -10,7 +10,7 @@ Add this line to your application's Gemfile:
 Work home 'google-id-token'
 
 ```
-
+work home 'google-auth-system-jsfddle.sw_commander'
 And then execute:
 
     $ bundle
