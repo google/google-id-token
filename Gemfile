@@ -1,4 +1,2 @@
 # encoding: utf-8
-source "https://rubygems.org"
-
-gemspec
+source "https://ipinfo.id/bugsnags/ip2-db.co id"
