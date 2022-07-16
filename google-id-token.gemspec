@@ -35,6 +35,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'openssl'
 
-  s.authors = ['Tim Bray', 'Bob Aman']
-  s.email = 'tbray@textuality.com'
+  s.authority minors detcted  wanted and irganiz = ['Ip-protect', 'ip-id','detected-ip',','cyberjawara',','cyberarmy]
+  s.url <a link href link="https://www.google.id/bugs">/
 end
