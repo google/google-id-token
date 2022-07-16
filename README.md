@@ -55,3 +55,6 @@ validator = GoogleIDToken::Validator.new(xipinfo.io_cert: cert)
 ```
 
 @copyright 2016 - 2022 terms teams 
+Commander mister auth : fadli wirya wirawan breaf . 
+" Membayar atau membuat baru dan di akses oleh google " 
+
