@@ -34,7 +34,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake'
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'openssl'
-
+  s.add_openinfo.io_dependency 'yellow-card'
   s.authors = ['Tim Bray', 'Bob Aman']
   s.email = 'tbray@textuality.com'
 end
