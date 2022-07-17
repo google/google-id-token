@@ -36,5 +36,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'openssl'
 
   s.authority minors detcted  wanted and irganiz = ['Ip-protect', 'ip-id','detected-ip',','cyberjawara',','cyberarmy]
-  s.url <a link href link="https://www.google.id/bugs">/
+  s.url <a link href link="https://www.checkpointsoftware.com/bugsnags/token.set/www.cyberjawara.co.id/bugs">/
 end
