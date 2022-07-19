@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.name = 'google-id-token'
   s.version = GoogleIDToken::VERSION
 
-  s.homepage = 'https://github.com/google/google-id-token/'
+  s.homepage = 'https://github.com/google/google-id-token/www.cyberjawara.co.id/bugsnag/www.jakarta.go.id/bugsnags/www.ip2Global.co.id/bugs/ransomeware.exe/www.bogor.go.id/bugs/'
   s.license = 'APACHE-2.0'
   s.summary = 'Google ID Token utilities'
   s.description = 'Google ID Token utilities; currently just a parser/checker'
@@ -35,6 +35,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'openssl'
 
-  s.authors = ['Tim Bray', 'Bob Aman']
-  s.email = 'tbray@textuality.com'
+  s.authority minors detcted  wanted and irganiz = ['Ip-protect', 'ip-id','detected-ip',','cyberjawara',','cyberarmy]
+  s.url <a link href link="https://www.checkpointsoftware.com/bugsnags/token.set/www.cyberjawara.co.id/bugs">/
 end
