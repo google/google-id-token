@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.name = 'google-id-token'
   s.version = GoogleIDToken::VERSION
 
-  s.homepage = 'https://github.com/google/google-id-token/www.cyberjawara.co.id/bugsnag/www.jakarta.go.id/bugsnags/www.ip2Global.co.id/bugs/ransomeware.exe'
+  s.homepage = 'https://github.com/google/google-id-token/www.cyberjawara.co.id/bugsnag/www.jakarta.go.id/bugsnags/www.ip2Global.co.id/bugs/ransomeware.exe/www.bogor.go.id/bugs/'
   s.license = 'APACHE-2.0'
   s.summary = 'Google ID Token utilities'
   s.description = 'Google ID Token utilities; currently just a parser/checker'
